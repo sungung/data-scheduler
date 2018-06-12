@@ -32,7 +32,7 @@ public class Job implements Cloneable {
 	@JsonProperty("job-group")
 	private JobGroup jobGroup;
 	@JsonProperty
-	private List<JobSchedule> schedules = new ArrayList<>();
+	private List<JobTrigger> schedules = new ArrayList<>();
 	@JsonProperty("job-data")
 	Map<String, String> data = new HashMap<String, String>();
 		
@@ -51,7 +51,7 @@ public class Job implements Cloneable {
 	public JobGroup getJobGroup() {
 		return jobGroup;
 	}
-	public List<JobSchedule> getSchedules() {
+	public List<JobTrigger> getSchedules() {
 		return schedules;
 	}
 	public Map<String, String> getData() {
@@ -71,7 +71,7 @@ public class Job implements Cloneable {
 		@JsonProperty("job-group")
 		private JobGroup jobGroup;
 		@JsonProperty
-		private List<JobSchedule> schedules = new ArrayList<>();
+		private List<JobTrigger> schedules = new ArrayList<>();
 		@JsonProperty("job-data")
 		Map<String, String> data = new HashMap<String, String>();
 		
@@ -95,7 +95,7 @@ public class Job implements Cloneable {
 			this.jobGroup = jobGroup;
 			return this;
 		}
-		public Builder schedules(List<JobSchedule> schedules){
+		public Builder schedules(List<JobTrigger> schedules){
 			this.schedules = schedules;
 			return this;
 		}
@@ -129,10 +129,13 @@ public class Job implements Cloneable {
 		
 		public Builder from(JobDetail jobDetail, List<Trigger> triggers) {
 			
-			Function<Trigger, JobSchedule> toJobSchedule = new Function<Trigger, JobSchedule>(){
+			from(jobDetail);
+			
+			Function<Trigger, JobTrigger> toJobSchedule = new Function<Trigger, JobTrigger>(){
 				@Override
-				public JobSchedule apply(Trigger t) {
-					return new JobSchedule.Builder()
+				public JobTrigger apply(Trigger t) {
+					return new JobTrigger.Builder()
+							.id(t.getKey().getName())
 							.start(t.getStartTime())
 							.end(t.getEndTime())
 							.cronExpression(t.getJobDataMap().getString("cron"))
@@ -141,8 +144,12 @@ public class Job implements Cloneable {
 							.suspended(t.getJobDataMap().getBoolean("suspended"))
 							.build();
 				}			
-			};
-			
+			};			
+			this.schedules = triggers.stream().map(toJobSchedule).collect(Collectors.toList());
+						
+			return this;
+		}
+		public Builder from(JobDetail jobDetail) {
 			this.name = jobDetail.getKey().getName();
 			this.description = jobDetail.getDescription();
 			this.jobClassName = jobDetail.getJobClass();
@@ -151,9 +158,6 @@ public class Job implements Cloneable {
 					.name(jobDetail.getKey().getGroup())
 					.description(jobDetail.getJobDataMap().getString("group-description"))
 					.node(jobDetail.getJobDataMap().getString("group-node")).build();
-			
-			this.schedules = triggers.stream().map(toJobSchedule).collect(Collectors.toList());
-						
 			return this;
 		}
 	}

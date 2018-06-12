@@ -12,29 +12,14 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 
 import com.sungung.scheduler.api.entity.Job;
-import com.sungung.scheduler.api.entity.JobSchedule;
+import com.sungung.scheduler.api.entity.JobTrigger;
 
 public class QuartzEntityFactory {
-	public static Set<Trigger> buildTriggers(Job job){
-		
-		Set<Trigger> triggers = new HashSet<Trigger>();
-		
-		for (JobSchedule schd : job.getSchedules()){
-			
-			JobDataMap jdm = new JobDataMap(job.getData());
-			
-			schd.setId(buildId(job.getName()));
-			// literal cron expression in trigger job data as storage
-			// because it is not handy to retrieve expression from Quartz entity
-			jdm.put("cron", schd.getCronExpression());
-			jdm.put("suspended", schd.isSuspended());
-			triggers.add(TriggerBuilder.newTrigger()
-					.withIdentity(schd.getId())
-					.startAt(schd.getStart())
-					.endAt(schd.getEnd())
-					.withSchedule(CronScheduleBuilder.cronSchedule(schd.getCronExpression()))
-					.usingJobData(jdm)
-					.build());
+	
+	public static Set<Trigger> buildTriggers(Job job){		
+		Set<Trigger> triggers = new HashSet<Trigger>();		
+		for (JobTrigger jt : job.getSchedules()){
+			triggers.add(buildTrigger(job, jt));
 		}
 		return triggers;
 	}
@@ -43,8 +28,7 @@ public class QuartzEntityFactory {
 		return name.concat("-") + UUID.randomUUID();
 	}
 
-	public static JobDetail buildJobDetail(Job job) {
-		
+	public static JobDetail buildJobDetail(Job job) {		
 		JobDataMap jdm = new JobDataMap(job.getData());
 		jdm.put("is-scheduled", job.isScheduled());
 		jdm.put("group-node", job.getJobGroup().getNode());
@@ -53,6 +37,19 @@ public class QuartzEntityFactory {
 		return JobBuilder.newJob(job.getJobClassName())
 				.withIdentity(job.getName(), job.getJobGroup().getName())
 				.withDescription(job.getDescription())
+				.usingJobData(jdm)
+				.build();
+	}
+	
+	public static Trigger buildTrigger(Job job, JobTrigger jt){
+		JobDataMap jdm = new JobDataMap(job.getData());
+		jdm.put("cron", jt.getCronExpression());
+		jdm.put("suspended", jt.isSuspended());
+		return TriggerBuilder.newTrigger()
+				.withIdentity(buildId(job.getName()))
+				.startAt(jt.getStart())
+				.endAt(jt.getEnd())
+				.withSchedule(CronScheduleBuilder.cronSchedule(jt.getCronExpression()))
 				.usingJobData(jdm)
 				.build();
 	}

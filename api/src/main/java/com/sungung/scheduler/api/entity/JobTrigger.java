@@ -2,12 +2,14 @@ package com.sungung.scheduler.api.entity;
 
 import java.util.Date;
 
+import org.quartz.Trigger;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
-@JsonDeserialize(builder = JobSchedule.Builder.class)
-public class JobSchedule {
+@JsonDeserialize(builder = JobTrigger.Builder.class)
+public class JobTrigger {
 	@JsonProperty
 	private String id;
 	@JsonProperty
@@ -93,8 +95,8 @@ public class JobSchedule {
 			this.nextFire =  nextFire;
 			return this;
 		}
-		public JobSchedule build(){
-			JobSchedule schedule = new JobSchedule();
+		public JobTrigger build(){
+			JobTrigger schedule = new JobTrigger();
 			schedule.id = this.id;
 			schedule.start = this.start;
 			schedule.end = this.end;
@@ -103,6 +105,14 @@ public class JobSchedule {
 			schedule.lastFired = this.lastFired;
 			schedule.nextFire = this.nextFire;
 			return schedule;
+		}
+		public Builder from(Trigger trigger){
+			return this.id(trigger.getKey().getName())
+					.start(trigger.getStartTime())
+					.end(trigger.getEndTime())
+					.cronExpression(trigger.getJobDataMap().getString("cron"))
+					.lastFired(trigger.getPreviousFireTime())
+					.nextFire(trigger.getNextFireTime());
 		}
 	}
 

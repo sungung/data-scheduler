@@ -1,1 +1,2 @@
-Add suspend a job api
+* Create gitignore under root
+* Add suspend a job api
